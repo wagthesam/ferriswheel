@@ -2,6 +2,7 @@ from model import Page
 from utils import session_scope
 from utils import find_ngrams
 from collections import defaultdict
+import math
 
 class Search(object):
     # tf-idf
@@ -26,7 +27,7 @@ class Search(object):
             for ngram in find_ngrams(search_str.split(' '), n):
                 if ngram in wc_index:
                     for doc in wc_index[ngram]:
-                        doc_scores[doc] += wc_index[ngram][doc]*(doc_count/global_wc_index.get(ngram, 1))
+                        doc_scores[doc] += wc_index[ngram][doc]*math.log(doc_count/len(global_wc_index.get(ngram, [1])))
 
         # every word in search query needs to be in a returned doc
         missing_filter = set()
@@ -37,7 +38,6 @@ class Search(object):
 
         top_results = [x[1] for x in 
             sorted([(doc_scores[doc], doc) for doc in doc_scores], reverse=True)[:top_n]]
-
         second_pass = []
         for doc in top_results:
             if doc not in missing_filter:
@@ -66,9 +66,9 @@ class Search(object):
 
     def ingest(self, page):
         boost = {
-            'title': 5.0,
-            'director': 2.0,
-            'stars': 2.0
+            'title': 2.0,
+            'director': 1.5,
+            'stars': 1.5
         }
 
         contents = page.get_contents()
@@ -91,11 +91,11 @@ class Search(object):
                     for n in range(11):
                         for ngram in find_ngrams(words, n):
                             wc_index[ngram][page.page_id] += weight
-                            global_wc_index[ngram] += weight
+                            global_wc_index[ngram].add(page.page_id)
             elif type(cur_field) == str:
                 words = cur_field.lower().split(' ')
                 for n in range(11):
                     for ngram in find_ngrams(words, n):
                         wc_index[ngram][page.page_id] += weight
-                        global_wc_index[ngram] += weight
+                        global_wc_index[ngram].add(page.page_id)
             self.application.index.docs_count += 1

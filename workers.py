@@ -6,6 +6,7 @@ import urllib
 from sqlalchemy.sql import exists
 from bs4 import BeautifulSoup
 import re
+import sys
 
 class Processor(object):
     def __init__(self, application):
@@ -25,7 +26,6 @@ class Processor(object):
                     self.process_list(page)
 
     def parse(self, page):
-        print('parsing: ', page.url)
         soup = BeautifulSoup(page.get_raw_contents(), 'html.parser')
         if 'Top 1000' in soup.title.string:
             logging.debug('Parsing list %s' % page.url)
@@ -79,7 +79,6 @@ class Processor(object):
                 page.state = Page.State.PROCESSED
                 page.page_type = Page.PageType.DETAIL
             logging.debug('Parsed detail %s' % page.url)
-            print('Processed ', doc.get('title', ''), '!')
         page.set_contents(doc)
 
     def fetch(self, page):
@@ -114,6 +113,6 @@ class Processor(object):
                         processed += 1
                 page.state = Page.State.PROCESSED
             logging.debug('Processed list %s' % page.url)
-            print('Added', processed, 'movies to be processed!')
+            print('Processed %s urls! Fetching movies & getting more movie urls...' % processed)
         else:
             logging.debug('Aleady processed list %s' % page.url)

@@ -62,8 +62,8 @@ class Application(object):
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
-    def start_pipeline(self):
-        print('Started scraper.')
+    def init(self):
+        print('Starting scraper! Fetching documents')
         pages_added = 0
         with session_scope(self.Session) as session:
             if session.query(Page).count() == 0:
@@ -79,12 +79,18 @@ class Application(object):
                     pages_added += 1
             session.expunge_all()
 
-        print('Started pipeline! Added %s pages to processing queue' % pages_added)
+        print('Started pipeline! Added %s root pages to processing queue' % pages_added)
         self.queue.join()
         print("Finished processing!")
+        app.search_module.build_index()
 
     def search(self, search_str):
         return self.search_module.search(search_str)
+
+    def rebuild(self):
+        self.reset()
+        self.init()
+        self.search_module.build_index()
 
     def reset(self):
         meta = Base.metadata
@@ -110,17 +116,11 @@ if __name__ == '__main__':
 
 Welcome to IMDB Search.
 Commands:
+- app.init(): runs scraper, builds the document corpus and search index
 - search(search_str): returns relevant movies for the given search string
 
 Admin commands:
-- app.start_pipeline(): starts or resumes the scraper on the top 1000 movies list
-                    to build our dataset to search.
-- app.build_index(): builds our search index
-- app.reset(): resets the scraper, deletes all stored data
-
-If this is your first time running this application, please run the crawler by typing app.start_pipeline()
-before running a search
-
+- app.reset(): reruns scraper, rebuilds the document corpus and search index
 '''
     exit_msg = ''
     app = Application()
