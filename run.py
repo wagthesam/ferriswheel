@@ -5,12 +5,10 @@ from config.prod import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import MetaData
-import contextlib
 import shutil
 import os
 from threading import Thread
-from queue import Queue 
-import hashlib
+from queue import Queue
 
 from utils import hash_str
 from utils import session_scope
@@ -63,7 +61,6 @@ class Application(object):
         self.Session = sessionmaker(bind=self.engine)
 
     def init(self):
-        print('Starting scraper! Fetching documents')
         pages_added = 0
         with session_scope(self.Session) as session:
             if session.query(Page).count() == 0:
@@ -79,20 +76,22 @@ class Application(object):
                     pages_added += 1
             session.expunge_all()
 
-        print('Started pipeline! Added %s root pages to processing queue' % pages_added)
-        self.queue.join()
-        print("Finished processing!")
-        app.search_module.build_index()
+        if pages_added != 0:
+            print('No movie data in our system. We need to scrape IMDB for data...')
+            print('Started pipeline! Added %s root pages to processing queue' % pages_added)
+            self.queue.join()
+            print("Finished processing!")
+        self.search_module.build_index()
 
     def search(self, search_str):
         return self.search_module.search(search_str)
 
     def rebuild(self):
-        self.reset()
+        self.clear()
         self.init()
-        self.search_module.build_index()
 
-    def reset(self):
+    def clear(self):
+        self.index.reset()
         meta = Base.metadata
         with session_scope(self.Session) as session:
             for table in reversed(meta.sorted_tables):
@@ -116,14 +115,15 @@ if __name__ == '__main__':
 
 Welcome to IMDB Search.
 Commands:
-- app.init(): runs scraper, builds the document corpus and search index
 - search(search_str): returns relevant movies for the given search string
 
 Admin commands:
-- app.reset(): reruns scraper, rebuilds the document corpus and search index
+- app.clear(): deletes local scraper and search index
+- app.rebuild(): reruns scraper, rebuilds the document corpus and search index
 '''
     exit_msg = ''
     app = Application()
+    app.init()
     ipshell = InteractiveShellEmbed(banner1=banner, exit_msg=exit_msg)
 
     ipshell()

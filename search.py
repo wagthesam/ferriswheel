@@ -15,6 +15,7 @@ class Search(object):
         # tf-idf
         # boost matches that contain all words
         # boost title, director, and stars fields in text
+        search_str = search_str.lower().strip()
         if self.application.index.built is False:
             print('Index missing!')
             self.build_index()

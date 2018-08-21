@@ -7,3 +7,9 @@ class Index(object):
         self.global_wc = defaultdict(set)
         self.docs_count = 0
         self.built = False
+
+    def reset(self):
+        self.wc = defaultdict(lambda: defaultdict(float))
+        self.global_wc = defaultdict(set)
+        self.docs_count = 0
+        self.built = False
